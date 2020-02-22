@@ -358,42 +358,25 @@ function resolvePackage(context, packageJsonPath, platform) {
  * `/js/boop/index.js` (see `_loadAsDir` for that).
  */
 
-function resolveFile(context, dirPath, fileName, platform) {
+function resolveFile(context, dirPath, fileNameHint, platform) {
   const isAssetFile = context.isAssetFile,
     resolveAsset = context.resolveAsset;
 
-  if (isAssetFile(fileName)) {
-    const extension = path.extname(fileName);
-    const basename = path.basename(fileName, extension);
-
-    if (!/@\d+(?:\.\d+)?x$/.test(basename)) {
-      try {
-        const assets = resolveAsset(dirPath, basename, extension);
-
-        if (assets != null) {
-          return mapResult(resolvedAs(assets), filePaths => ({
-            type: "assetFiles",
-            filePaths
-          }));
-        }
-      } catch (err) {
-        if (err.code === "ENOENT") {
-          return failedFor({
-            type: "asset",
-            name: fileName
-          });
-        }
-      }
-    }
-
-    return failedFor({
-      type: "asset",
-      name: fileName
-    });
+  if (isAssetFile(fileNameHint)) {
+    const result = resolveAssetFiles(
+      resolveAsset,
+      dirPath,
+      fileNameHint,
+      platform
+    );
+    return mapResult(result, filePaths => ({
+      type: "assetFiles",
+      filePaths
+    }));
   }
 
   const candidateExts = [];
-  const filePathPrefix = path.join(dirPath, fileName);
+  const filePathPrefix = path.join(dirPath, fileNameHint);
 
   const sfContext = _objectSpread({}, context, {
     candidateExts,
@@ -487,6 +470,33 @@ function resolveSourceFileForExt(context, extension) {
 
   context.candidateExts.push(extension);
   return null;
+}
+/**
+ * Find all the asset files corresponding to the file base name, and return
+ * it wrapped as a resolution result.
+ */
+
+function resolveAssetFiles(resolveAsset, dirPath, fileNameHint, platform) {
+  try {
+    const assetNames = resolveAsset(dirPath, fileNameHint, platform);
+
+    if (assetNames != null) {
+      const res = assetNames.map(assetName => path.join(dirPath, assetName));
+      return resolvedAs(res);
+    }
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      return failedFor({
+        type: "asset",
+        name: fileNameHint
+      });
+    }
+  }
+
+  return failedFor({
+    type: "asset",
+    name: fileNameHint
+  });
 } // HasteFS stores paths with backslashes on Windows, this ensures the path is in
 // the proper format. Will also add drive letter if not present so `/root` will
 // resolve to `C:\root`. Noop on other platforms.

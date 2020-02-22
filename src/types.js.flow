@@ -58,7 +58,7 @@ export type IsAssetFile = (fileName: string) => boolean;
 export type ResolveAsset = (
   dirPath: string,
   assetName: string,
-  extension: string,
+  platform: string | null,
 ) => ?$ReadOnlyArray<string>;
 
 export type FileContext = {
