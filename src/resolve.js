@@ -117,12 +117,7 @@ function resolve(context, moduleName, platform) {
 
   if (resolveRequest) {
     try {
-      const resolution = resolveRequest(
-        context,
-        realModuleName,
-        platform,
-        moduleName
-      );
+      const resolution = resolveRequest(context, realModuleName, platform);
 
       if (resolution) {
         return resolution;
